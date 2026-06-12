@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:3001/api';
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
