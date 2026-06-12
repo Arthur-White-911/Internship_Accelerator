@@ -30,7 +30,7 @@ jobs:
         working-directory: ./frontend_src
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./frontend_src/dist
 
@@ -39,6 +39,7 @@ jobs:
     needs: build
     permissions:
       pages: write
+      id-token: write
     steps:
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
