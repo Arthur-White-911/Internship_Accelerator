@@ -29,22 +29,21 @@ router.post('/send', authMiddleware, async (req, res) => {
       { role: 'user', content: message },
     ];
 
-    // 调用 AI 接口
+    // 调用 DeepSeek AI 接口
     let reply = '';
     try {
-      const openaiBase = process.env.OPENAI_API_BASE || 'https://api.openai.com/v1';
-      const openaiKey = process.env.OPENAI_API_KEY || '';
+      const deepseekKey = process.env.DEEPSEEK_API_KEY || 'sk-2b401ab6175e449ea8087884eb78e423';
 
-      const response = await fetch(`${openaiBase}/chat/completions`, {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${openaiKey}`,
+          Authorization: `Bearer ${deepseekKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'deepseek-chat',
           messages,
-          max_tokens: 500,
+          max_tokens: 800,
           temperature: 0.7,
         }),
       });
@@ -53,7 +52,8 @@ router.post('/send', authMiddleware, async (req, res) => {
       if (data.choices && data.choices[0]) {
         reply = data.choices[0].message.content;
       } else {
-        throw new Error('AI 接口返回异常');
+        console.error('[DeepSeek response]', JSON.stringify(data));
+        throw new Error('DeepSeek 接口返回异常');
       }
     } catch (aiErr) {
       console.error('[chat AI error]', aiErr.message);
