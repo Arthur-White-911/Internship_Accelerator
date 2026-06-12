@@ -1,63 +1,77 @@
-const Datastore = require('nedb');
-const path = require('path');
+const mysql = require('mysql2/promise');
+const { DB } = require('../config');
 
-const dbDir = path.join(__dirname, '../data');
-require('fs').mkdirSync(dbDir, { recursive: true });
+const pool = mysql.createPool({
+  host: DB.host,
+  port: DB.port,
+  user: DB.user,
+  password: DB.password,
+  database: DB.database,
+  waitForConnections: true,
+  connectionLimit: DB.connectionLimit,
+  namedPlaceholders: true,
+  dateStrings: false,
+  charset: 'utf8mb4',
+});
 
-const db = {
-  users: new Datastore({ filename: path.join(dbDir, 'users.db'), autoload: true }),
-  notifications: new Datastore({ filename: path.join(dbDir, 'notifications.db'), autoload: true }),
-  assessments: new Datastore({ filename: path.join(dbDir, 'assessments.db'), autoload: true }),
-  chatHistory: new Datastore({ filename: path.join(dbDir, 'chat.db'), autoload: true }),
-  trainingRecords: new Datastore({ filename: path.join(dbDir, 'training.db'), autoload: true }),
+async function query(sql, params = []) {
+  const [rows] = await pool.execute(sql, params);
+  return rows;
+}
+
+async function one(sql, params = []) {
+  const rows = await query(sql, params);
+  return rows[0] || null;
+}
+
+async function insert(sql, params = []) {
+  const [result] = await pool.execute(sql, params);
+  return result.insertId;
+}
+
+async function run(sql, params = []) {
+  const [result] = await pool.execute(sql, params);
+  return result;
+}
+
+async function transaction(callback) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const result = await callback(connection);
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+function parseJson(value, fallback = null) {
+  if (value == null) return fallback;
+  if (Array.isArray(value) || typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function toIso(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString();
+  return new Date(value).toISOString();
+}
+
+module.exports = {
+  pool,
+  query,
+  one,
+  insert,
+  run,
+  transaction,
+  parseJson,
+  toIso,
 };
-
-// 建立索引
-db.users.ensureIndex({ fieldName: 'account', unique: true });
-db.notifications.ensureIndex({ fieldName: 'userId' });
-db.assessments.ensureIndex({ fieldName: 'userId' });
-db.chatHistory.ensureIndex({ fieldName: 'userId' });
-db.trainingRecords.ensureIndex({ fieldName: 'userId' });
-
-// Promise 封装
-const promisify = (fn) => (...args) =>
-  new Promise((resolve, reject) =>
-    fn(...args, (err, result) => (err ? reject(err) : resolve(result)))
-  );
-
-db.users.findOneAsync = promisify(db.users.findOne.bind(db.users));
-db.users.findAsync = promisify(db.users.find.bind(db.users));
-db.users.insertAsync = promisify(db.users.insert.bind(db.users));
-db.users.updateAsync = (query, update, opts = {}) =>
-  new Promise((resolve, reject) =>
-    db.users.update(query, update, opts, (err, n) => (err ? reject(err) : resolve(n)))
-  );
-
-db.notifications.findAsync = promisify(db.notifications.find.bind(db.notifications));
-db.notifications.findOneAsync = promisify(db.notifications.findOne.bind(db.notifications));
-db.notifications.insertAsync = promisify(db.notifications.insert.bind(db.notifications));
-db.notifications.updateAsync = (query, update, opts = {}) =>
-  new Promise((resolve, reject) =>
-    db.notifications.update(query, update, opts, (err, n) => (err ? reject(err) : resolve(n)))
-  );
-db.notifications.removeAsync = (query, opts = {}) =>
-  new Promise((resolve, reject) =>
-    db.notifications.remove(query, opts, (err, n) => (err ? reject(err) : resolve(n)))
-  );
-db.notifications.countAsync = promisify(db.notifications.count.bind(db.notifications));
-
-db.assessments.findAsync = promisify(db.assessments.find.bind(db.assessments));
-db.assessments.findOneAsync = promisify(db.assessments.findOne.bind(db.assessments));
-db.assessments.insertAsync = promisify(db.assessments.insert.bind(db.assessments));
-
-db.chatHistory.findAsync = promisify(db.chatHistory.find.bind(db.chatHistory));
-db.chatHistory.insertAsync = promisify(db.chatHistory.insert.bind(db.chatHistory));
-db.chatHistory.removeAsync = (query, opts = {}) =>
-  new Promise((resolve, reject) =>
-    db.chatHistory.remove(query, opts, (err, n) => (err ? reject(err) : resolve(n)))
-  );
-
-db.trainingRecords.findAsync = promisify(db.trainingRecords.find.bind(db.trainingRecords));
-db.trainingRecords.insertAsync = promisify(db.trainingRecords.insert.bind(db.trainingRecords));
-
-module.exports = db;

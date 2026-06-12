@@ -3,27 +3,54 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const authMiddleware = require('../middleware/auth');
-const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config');
+const { JWT_EXPIRES_IN, JWT_SECRET } = require('../config');
 
 const router = express.Router();
 
-// 生成 token
 function signToken(user) {
-  return jwt.sign({ userId: user._id, account: user.account }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(
+    { userId: user.id, account: user.account },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 }
 
-// 格式化用户对象（去掉密码）
-function formatUser(user) {
-  const { password, ...rest } = user;
-  return rest;
+function formatUser(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    account: row.account,
+    identity: row.identity,
+    name: row.name || row.account,
+    school: row.school || '',
+    major: row.major || '',
+    phone: row.phone || '',
+    email: row.email || '',
+    avatar: row.avatar || '',
+    skillProfessional: row.skill_professional || '',
+    skillLanguage: row.skill_language || '',
+    skillSoft: row.skill_soft || '',
+  };
 }
 
-// ─── POST /api/auth/register ───────────────────────────────────────────────
+async function getUserById(id) {
+  return db.one('SELECT * FROM users WHERE id = ?', [id]);
+}
+
 router.post('/register', async (req, res) => {
   try {
-    const { account, password, confirmPassword, name, school, major, phone, email, identity = 'student' } = req.body;
+    const {
+      account,
+      password,
+      confirmPassword,
+      name,
+      school,
+      major,
+      phone,
+      email,
+      identity = 'student',
+    } = req.body;
 
-    // 参数校验
     if (!account || !password) {
       return res.status(400).json({ success: false, message: '账号和密码不能为空' });
     }
@@ -37,48 +64,46 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: '两次密码输入不一致' });
     }
 
-    // 检查账号是否已存在
-    const existing = await db.users.findOneAsync({ account });
+    const existing = await db.one('SELECT id FROM users WHERE account = ?', [account]);
     if (existing) {
       return res.status(409).json({ success: false, message: '该账号已被注册' });
     }
 
-    // 加密密码
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
+    const userId = await db.insert(
+      `INSERT INTO users
+        (account, password_hash, identity, name, school, major, phone, email)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        account,
+        passwordHash,
+        identity,
+        name || account,
+        school || '',
+        major || '',
+        phone || '',
+        email || '',
+      ]
+    );
 
-    // 创建用户
-    const newUser = await db.users.insertAsync({
-      account,
-      password: hashedPassword,
-      identity,
-      name: name || account,
-      school: school || '',
-      major: major || '',
-      phone: phone || '',
-      email: email || '',
-      avatar: '',
-      skillProfessional: '',
-      skillLanguage: '',
-      skillSoft: '',
-      createdAt: new Date().toISOString(),
-    });
+    await db.insert(
+      `INSERT INTO notifications (user_id, type, title, content)
+       VALUES (?, ?, ?, ?)`,
+      [
+        userId,
+        '系统',
+        '欢迎加入实习加速器',
+        '你已成功注册，快去完成能力测评，开启你的求职加速之旅吧！',
+      ]
+    );
 
-    const token = signToken(newUser);
-
-    // 创建欢迎通知
-    await db.notifications.insertAsync({
-      userId: newUser._id,
-      type: 'system',
-      title: '欢迎加入实习加速器！',
-      content: '你已成功注册，快去完成能力测评，开启你的求职加速之旅吧！',
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    });
+    const user = await getUserById(userId);
+    const token = signToken(user);
 
     return res.status(201).json({
       success: true,
       message: '注册成功',
-      data: { token, user: formatUser(newUser) },
+      data: { token, user: formatUser(user) },
     });
   } catch (err) {
     console.error('[register]', err);
@@ -86,27 +111,27 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ─── POST /api/auth/login ──────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
     const { account, password, identity } = req.body;
-
     if (!account || !password) {
       return res.status(400).json({ success: false, message: '账号和密码不能为空' });
     }
 
-    const user = await db.users.findOneAsync({ account });
+    const user = await db.one('SELECT * FROM users WHERE account = ?', [account]);
     if (!user) {
       return res.status(401).json({ success: false, message: '账号不存在' });
     }
+    if (identity && user.identity !== identity) {
+      return res.status(401).json({ success: false, message: '账号身份不匹配' });
+    }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
+    const matched = await bcrypt.compare(password, user.password_hash);
+    if (!matched) {
       return res.status(401).json({ success: false, message: '密码错误' });
     }
 
     const token = signToken(user);
-
     return res.json({
       success: true,
       message: '登录成功',
@@ -118,10 +143,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ─── GET /api/auth/me ──────────────────────────────────────────────────────
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const user = await db.users.findOneAsync({ _id: req.userId });
+    const user = await getUserById(req.userId);
     if (!user) {
       return res.status(404).json({ success: false, message: '用户不存在' });
     }
@@ -132,38 +156,45 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ─── PUT /api/auth/profile ─────────────────────────────────────────────────
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
-    const { name, school, major, phone, email, avatar, skillProfessional, skillLanguage, skillSoft } = req.body;
+    const allowed = {
+      name: 'name',
+      school: 'school',
+      major: 'major',
+      phone: 'phone',
+      email: 'email',
+      avatar: 'avatar',
+      skillProfessional: 'skill_professional',
+      skillLanguage: 'skill_language',
+      skillSoft: 'skill_soft',
+    };
+    const sets = [];
+    const values = [];
 
-    const updateFields = {};
-    if (name !== undefined) updateFields.name = name;
-    if (school !== undefined) updateFields.school = school;
-    if (major !== undefined) updateFields.major = major;
-    if (phone !== undefined) updateFields.phone = phone;
-    if (email !== undefined) updateFields.email = email;
-    if (avatar !== undefined) updateFields.avatar = avatar;
-    if (skillProfessional !== undefined) updateFields.skillProfessional = skillProfessional;
-    if (skillLanguage !== undefined) updateFields.skillLanguage = skillLanguage;
-    if (skillSoft !== undefined) updateFields.skillSoft = skillSoft;
-    updateFields.updatedAt = new Date().toISOString();
+    Object.entries(allowed).forEach(([inputKey, column]) => {
+      if (req.body[inputKey] !== undefined) {
+        sets.push(`${column} = ?`);
+        values.push(req.body[inputKey]);
+      }
+    });
 
-    await db.users.updateAsync({ _id: req.userId }, { $set: updateFields });
-    const updated = await db.users.findOneAsync({ _id: req.userId });
+    if (sets.length) {
+      values.push(req.userId);
+      await db.run(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, values);
+    }
 
-    return res.json({ success: true, message: '保存成功', data: formatUser(updated) });
+    const user = await getUserById(req.userId);
+    return res.json({ success: true, message: '保存成功', data: formatUser(user) });
   } catch (err) {
     console.error('[update profile]', err);
     return res.status(500).json({ success: false, message: '服务器错误' });
   }
 });
 
-// ─── PUT /api/auth/password ────────────────────────────────────────────────
 router.put('/password', authMiddleware, async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
-
     if (!oldPassword || !newPassword) {
       return res.status(400).json({ success: false, message: '请填写原密码和新密码' });
     }
@@ -171,14 +202,14 @@ router.put('/password', authMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, message: '新密码长度不能少于6位' });
     }
 
-    const user = await db.users.findOneAsync({ _id: req.userId });
-    const match = await bcrypt.compare(oldPassword, user.password);
-    if (!match) {
+    const user = await getUserById(req.userId);
+    const matched = await bcrypt.compare(oldPassword, user.password_hash);
+    if (!matched) {
       return res.status(401).json({ success: false, message: '原密码错误' });
     }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
-    await db.users.updateAsync({ _id: req.userId }, { $set: { password: hashed } });
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, req.userId]);
 
     return res.json({ success: true, message: '密码修改成功' });
   } catch (err) {

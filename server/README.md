@@ -1,68 +1,92 @@
-# Internship Accelerator — 后端服务
+# Internship Accelerator Backend
 
-基于 **Node.js + Express + NeDB** 的轻量级后端 API 服务。
+Backend API for the Internship Accelerator project. It uses Node.js, Express, MySQL, JWT auth, and DeepSeek for the chat assistant.
 
-## 技术栈
+## Quick Start
 
-| 技术 | 用途 |
-| --- | --- |
-| Express | Web 框架 |
-| NeDB | 嵌入式文档数据库（无需安装，数据存为本地文件） |
-| bcryptjs | 密码加密 |
-| jsonwebtoken | JWT 身份认证 |
-| cors | 跨域处理 |
-
-## 快速启动
+1. Install dependencies:
 
 ```bash
 cd server
 npm install
-node index.js
 ```
 
-服务默认运行在 `http://localhost:3001`。
+2. Create MySQL tables:
 
-## 接口列表
+```bash
+mysql -u root -p < ../database/schema.sql
+mysql -u root -p internship_accelerator < ../database/seed.sql
+```
 
-### 认证（无需登录）
+3. Create environment config:
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/api/auth/register` | 注册 |
-| POST | `/api/auth/login` | 登录 |
+```bash
+cp .env.example .env
+```
 
-### 需要登录（请求头携带 `Authorization: Bearer <token>`）
+Then edit `.env` and fill in your MySQL password, JWT secret, frontend domain, and DeepSeek key.
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/api/auth/me` | 获取当前用户信息 |
-| PUT | `/api/auth/profile` | 更新用户资料 |
-| PUT | `/api/auth/password` | 修改密码 |
-| GET | `/api/profile` | 获取个人资料 |
-| PUT | `/api/profile` | 更新个人资料 |
-| GET | `/api/notifications` | 获取通知列表 |
-| GET | `/api/notifications/stats` | 获取未读数量 |
-| PUT | `/api/notifications/:id/read` | 标记已读 |
-| PUT | `/api/notifications/read-all` | 全部已读 |
-| DELETE | `/api/notifications/:id` | 删除通知 |
-| POST | `/api/chat/send` | 发送消息（AI 回复） |
-| GET | `/api/chat/history` | 获取对话历史 |
-| DELETE | `/api/chat/clear` | 清空对话 |
-| POST | `/api/assessment/submit` | 提交能力测评 |
-| GET | `/api/assessment/history` | 测评历史 |
-| GET | `/api/assessment/latest` | 最新测评结果 |
+4. Start the API:
 
-## 环境变量（可选）
+```bash
+npm run dev
+```
 
-在 `server/` 目录下创建 `.env` 文件：
+The API runs at `http://localhost:3001` by default.
+
+## Important Environment Variables
 
 ```env
 PORT=3001
-JWT_SECRET=your_custom_secret_key
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_API_BASE=https://api.openai.com/v1
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=internship_accelerator
+JWT_SECRET=replace_with_a_long_random_secret
+FRONTEND_ORIGINS=http://localhost:5173,https://your-site.netlify.app
+DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
-## 数据存储
+Never commit a real `DEEPSEEK_API_KEY` or database password.
 
-所有数据存储在 `server/data/` 目录下的 `.db` 文件中（NeDB 格式，实为 JSON 文本），已加入 `.gitignore`，不会被提交到 Git。
+## API Groups
+
+Public:
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/health` | Health check |
+| POST | `/api/auth/register` | Register |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/programs` | List programs |
+| GET | `/api/training/projects` | List training projects |
+| GET | `/api/interview/questions` | List interview questions |
+
+Requires `Authorization: Bearer <token>`:
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/auth/me` | Current user |
+| PUT | `/api/auth/profile` | Update profile |
+| PUT | `/api/auth/password` | Update password |
+| GET/PUT | `/api/profile` | Profile center |
+| POST | `/api/assessment/submit` | Submit assessment |
+| GET | `/api/assessment/history` | Assessment history |
+| POST | `/api/chat/send` | DeepSeek chat |
+| GET/DELETE | `/api/chat/history` | Chat history |
+| POST | `/api/programs/:id/enroll` | Enroll program |
+| POST | `/api/training/start` | Start training |
+| GET | `/api/interview/history` | Mock interview history |
+| POST | `/api/interview/mock` | Submit mock interview |
+| GET/PUT/DELETE | `/api/notifications` | Notifications |
+
+## Deployment Notes
+
+Deploy the frontend separately on Netlify. Set this Netlify environment variable:
+
+```env
+VITE_API_BASE=https://your-backend-domain.com/api
+```
+
+Deploy this `server/` folder on a Node backend platform such as Render, Railway, a VPS, or a cloud server. The backend must be able to connect to your MySQL instance.

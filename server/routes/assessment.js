@@ -4,84 +4,139 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-// POST /api/assessment/submit
+function clamp(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function buildAssessment({ skillLevel, experience, careerGoal }) {
+  const levelMap = { 初级: 42, 中级: 68, 高级: 84 };
+  const base = levelMap[skillLevel] || 55;
+  const expBonus = experience && experience.trim().length > 30 ? 8 : 0;
+  const goalBonus = careerGoal ? 4 : 0;
+
+  const scores = {
+    professional: clamp(base + expBonus + 6),
+    practical: clamp(base + expBonus),
+    communication: clamp(base + goalBonus - 2),
+    teamwork: clamp(base + 5),
+    innovation: clamp(base + goalBonus + 3),
+  };
+  const matchPercent = clamp(
+    Object.values(scores).reduce((sum, value) => sum + value, 0) / Object.keys(scores).length
+  );
+
+  const suggestions = [];
+  if (scores.professional < 65) suggestions.push('建议加强岗位核心技能训练，优先完成技术或业务基础模块。');
+  if (scores.practical < 65) suggestions.push('建议补充项目经历，把课程知识转化成可展示的作品或案例。');
+  if (scores.communication < 65) suggestions.push('建议多做模拟面试，训练表达结构和回答节奏。');
+  if (matchPercent >= 80) suggestions.push('综合匹配度较高，可以开始冲刺高质量实习并完善简历。');
+  if (matchPercent < 80) suggestions.push('建议选择匹配的培养方案，按阶段补齐短板。');
+
+  return { scores, matchPercent, suggestions };
+}
+
+function formatRecord(row) {
+  const suggestions = db.parseJson(row.suggestions, []);
+  return {
+    id: row.id,
+    major: row.major || '',
+    skillLevel: row.skill_level || '',
+    experience: row.experience || '',
+    careerGoal: row.career_goal || '',
+    matchPercent: row.match_percent,
+    scores: {
+      professional: row.professional_score,
+      practical: row.practical_score,
+      communication: row.communication_score,
+      teamwork: row.teamwork_score,
+      innovation: row.innovation_score,
+    },
+    suggestions,
+    createdAt: db.toIso(row.created_at),
+  };
+}
+
 router.post('/submit', authMiddleware, async (req, res) => {
   try {
-    const { major, skillLevel, experience, careerGoal } = req.body;
-
+    const { major, skillLevel, experience = '', careerGoal } = req.body;
     if (!major || !skillLevel || !careerGoal) {
       return res.status(400).json({ success: false, message: '请填写完整信息' });
     }
 
-    // 简单评分逻辑
-    const levelMap = { '初级': 30, '中级': 60, '高级': 90 };
-    const baseScore = levelMap[skillLevel] || 50;
-    const expBonus = experience && experience.length > 20 ? 10 : 0;
-
-    const scores = {
-      technical: Math.min(100, baseScore + expBonus + Math.floor(Math.random() * 10)),
-      communication: Math.min(100, baseScore - 5 + Math.floor(Math.random() * 15)),
-      problemSolving: Math.min(100, baseScore + Math.floor(Math.random() * 12)),
-      teamwork: Math.min(100, baseScore + 5 + Math.floor(Math.random() * 10)),
-    };
-
-    const overall = Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / 4);
-
-    const suggestions = [];
-    if (scores.technical < 60) suggestions.push('建议加强技术基础，可参考我们的技能培训模块');
-    if (scores.communication < 60) suggestions.push('建议提升沟通表达能力，多参与模拟面试练习');
-    if (overall >= 80) suggestions.push('综合能力优秀，建议直接冲击头部企业');
-    else if (overall >= 60) suggestions.push('基础扎实，建议针对目标岗位进行专项提升');
-    else suggestions.push('建议系统性学习，从入门培养方案开始');
-
-    const record = await db.assessments.insertAsync({
-      userId: req.userId,
-      major,
+    const { scores, matchPercent, suggestions } = buildAssessment({
       skillLevel,
-      experience: experience || '',
+      experience,
       careerGoal,
-      scores,
-      overall,
-      suggestions,
-      createdAt: new Date().toISOString(),
     });
 
-    // 添加通知
-    await db.notifications.insertAsync({
-      userId: req.userId,
-      type: 'assessment',
-      title: '能力分析报告已生成',
-      content: `你的综合能力评分为 ${overall} 分，快去查看详细报告吧！`,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-    });
+    const id = await db.insert(
+      `INSERT INTO assessment_results
+        (user_id, major, skill_level, experience, career_goal, match_percent,
+         professional_score, practical_score, communication_score, teamwork_score,
+         innovation_score, suggestions)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        req.userId,
+        major,
+        skillLevel,
+        experience,
+        careerGoal,
+        matchPercent,
+        scores.professional,
+        scores.practical,
+        scores.communication,
+        scores.teamwork,
+        scores.innovation,
+        JSON.stringify(suggestions),
+      ]
+    );
 
-    return res.json({ success: true, data: record });
+    await db.insert(
+      `INSERT INTO notifications (user_id, type, title, content)
+       VALUES (?, ?, ?, ?)`,
+      [
+        req.userId,
+        '测评结果',
+        '能力分析报告已生成',
+        `你的职业匹配度为 ${matchPercent}%，快去查看详细报告吧！`,
+      ]
+    );
+
+    const row = await db.one('SELECT * FROM assessment_results WHERE id = ?', [id]);
+    return res.json({ success: true, data: formatRecord(row) });
   } catch (err) {
     console.error('[assessment submit]', err);
     return res.status(500).json({ success: false, message: '服务器错误' });
   }
 });
 
-// GET /api/assessment/history
 router.get('/history', authMiddleware, async (req, res) => {
   try {
-    const records = await db.assessments.findAsync({ userId: req.userId });
-    records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return res.json({ success: true, data: records });
+    const rows = await db.query(
+      `SELECT * FROM assessment_results
+       WHERE user_id = ?
+       ORDER BY created_at DESC`,
+      [req.userId]
+    );
+    return res.json({ success: true, data: rows.map(formatRecord) });
   } catch (err) {
+    console.error('[assessment history]', err);
     return res.status(500).json({ success: false, message: '服务器错误' });
   }
 });
 
-// GET /api/assessment/latest
 router.get('/latest', authMiddleware, async (req, res) => {
   try {
-    const records = await db.assessments.findAsync({ userId: req.userId });
-    if (!records.length) return res.json({ success: true, data: null });
-    records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return res.json({ success: true, data: records[0] });
+    const row = await db.one(
+      `SELECT * FROM assessment_results
+       WHERE user_id = ?
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [req.userId]
+    );
+    return res.json({ success: true, data: row ? formatRecord(row) : null });
   } catch (err) {
+    console.error('[assessment latest]', err);
     return res.status(500).json({ success: false, message: '服务器错误' });
   }
 });
