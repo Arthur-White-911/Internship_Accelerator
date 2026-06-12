@@ -24,6 +24,9 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/assessment', require('./routes/assessment'));
+app.use('/api/interview', require('./routes/interview'));
+app.use('/api/programs', require('./routes/programs'));
+app.use('/api/training', require('./routes/training'));
 
 // 健康检查
 app.get('/api/health', (req, res) => {
