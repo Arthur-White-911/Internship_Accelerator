@@ -10,7 +10,8 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:4173',
     'http://127.0.0.1:5173',
-    // 部署后在此添加你的域名，例如：'https://your-domain.com'
+    'https://internship-accelerator.netlify.app',
+    'https://internshipaccelerator.netlify.app',
   ],
   credentials: true,
 }));
