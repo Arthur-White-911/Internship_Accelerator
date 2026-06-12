@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>实习加速器 · 网申助手</title>
+  <link rel="stylesheet" href="src/popup.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-logo">
+        <div class="logo-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <span class="logo-text">实习加速器</span>
+      </div>
+      <div class="header-badge">网申助手</div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="detect">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        职位识别
+      </button>
+      <button class="tab-btn" data-tab="fill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        智能填表
+      </button>
+      <button class="tab-btn" data-tab="tracker">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        进度追踪
+      </button>
+      <button class="tab-btn" data-tab="profile">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        我的信息
+      </button>
+    </nav>
+
+    <!-- Tab: 职位识别 -->
+    <section class="tab-content active" id="tab-detect">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        当前页面职位
+      </div>
+
+      <div id="job-info-card" class="job-card">
+        <div class="job-card-placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+          <p>点击下方按钮识别当前页面的职位信息</p>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-detect">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          识别职位信息
+        </button>
+        <button class="btn btn-secondary" id="btn-save-job" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+          收藏职位
+        </button>
+      </div>
+    </section>
+
+    <!-- Tab: 智能填表 -->
+    <section class="tab-content" id="tab-fill">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        一键填写网申表单
+      </div>
+
+      <div class="fill-info-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>将自动识别页面表单字段，并填入你在「我的信息」中保存的个人资料</span>
+      </div>
+
+      <div class="fill-preview" id="fill-preview">
+        <div class="fill-preview-row">
+          <span class="fill-preview-label">姓名</span>
+          <span class="fill-preview-value" id="preview-name">—</span>
+        </div>
+        <div class="fill-preview-row">
+          <span class="fill-preview-label">手机</span>
+          <span class="fill-preview-value" id="preview-phone">—</span>
+        </div>
+        <div class="fill-preview-row">
+          <span class="fill-preview-label">邮箱</span>
+          <span class="fill-preview-value" id="preview-email">—</span>
+        </div>
+        <div class="fill-preview-row">
+          <span class="fill-preview-label">学校</span>
+          <span class="fill-preview-value" id="preview-school">—</span>
+        </div>
+        <div class="fill-preview-row">
+          <span class="fill-preview-label">专业</span>
+          <span class="fill-preview-value" id="preview-major">—</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-fill">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          一键填写表单
+        </button>
+      </div>
+    </section>
+
+    <!-- Tab: 进度追踪 -->
+    <section class="tab-content" id="tab-tracker">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        申请进度追踪
+      </div>
+
+      <div class="status-legend">
+        <span class="status-dot status-saved"></span><span>已收藏</span>
+        <span class="status-dot status-applied"></span><span>已投递</span>
+        <span class="status-dot status-interview"></span><span>面试中</span>
+        <span class="status-dot status-offer"></span><span>已拿Offer</span>
+        <span class="status-dot status-rejected"></span><span>已拒绝</span>
+      </div>
+
+      <div id="job-list" class="job-list">
+        <div class="empty-state">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <p>暂无收藏职位<br/>在「职位识别」中收藏职位后显示</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab: 我的信息 -->
+    <section class="tab-content" id="tab-profile">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        个人信息（用于自动填表）
+      </div>
+
+      <form id="profile-form" class="profile-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>姓名</label>
+            <input type="text" id="p-name" name="name" placeholder="真实姓名" />
+          </div>
+          <div class="form-group">
+            <label>手机号</label>
+            <input type="tel" id="p-phone" name="phone" placeholder="138xxxx8888" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>邮箱</label>
+          <input type="email" id="p-email" name="email" placeholder="example@email.com" />
+        </div>
+        <div class="form-group">
+          <label>学校</label>
+          <input type="text" id="p-school" name="school" placeholder="就读学校全称" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>专业</label>
+            <input type="text" id="p-major" name="major" placeholder="所学专业" />
+          </div>
+          <div class="form-group">
+            <label>年级</label>
+            <input type="text" id="p-grade" name="grade" placeholder="如：大三" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>GPA</label>
+            <input type="text" id="p-gpa" name="gpa" placeholder="如：3.8/4.0" />
+          </div>
+          <div class="form-group">
+            <label>技能</label>
+            <input type="text" id="p-skills" name="skills" placeholder="Python, Excel..." />
+          </div>
+        </div>
+
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+            </svg>
+            保存信息
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <a href="#" id="btn-open-platform" class="footer-link">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        打开实习加速器平台
+      </a>
+    </footer>
+  </div>
+
+  <script src="src/popup.js"></script>
+</body>
+</html>

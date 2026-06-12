@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "实习加速器 · 网申助手",
+  "version": "1.0.0",
+  "description": "一键识别职位信息、智能填写网申表单、追踪申请进度，助你高效完成实习申请。",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "实习加速器 · 网申助手"
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.zhaopin.com/*",
+        "*://*.51job.com/*",
+        "*://*.liepin.com/*",
+        "*://*.lagou.com/*",
+        "*://*.boss.zhipin.com/*",
+        "*://*.linkedin.com/*",
+        "*://*.internshala.com/*",
+        "*://*.handshake.com/*",
+        "*://*.smartrecruiters.com/*",
+        "*://*.greenhouse.io/*",
+        "*://*.lever.co/*",
+        "*://*.workday.com/*",
+        "*://*.taleo.net/*",
+        "*://*.icims.com/*",
+        "*://*/*"
+      ],
+      "js": ["src/content.js"],
+      "css": ["src/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/*", "icons/*"],
+      "matches": ["*://*/*"]
+    }
+  ]
+}

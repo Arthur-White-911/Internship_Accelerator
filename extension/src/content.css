@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════════════════════════
+   实习加速器 · 网申助手 — Content Script Styles
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── 悬浮按钮 ─── */
+#ia-floating-btn {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 10px 12px;
+  background: linear-gradient(135deg, #0A1628 0%, #1E3A5F 100%);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 212, 255, 0.15);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#ia-floating-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(0, 212, 255, 0.7);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+#ia-floating-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.ia-fab-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #00D4FF, #6366F1);
+  border-radius: 50%;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.ia-fab-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* ─── Toast 提示 ─── */
+#ia-toast {
+  position: fixed;
+  bottom: 88px;
+  right: 28px;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  animation: ia-toast-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.ia-toast-success {
+  background: rgba(16, 185, 129, 0.95);
+  color: #fff;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.ia-toast-info {
+  background: rgba(10, 22, 40, 0.95);
+  color: #94A3B8;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.ia-toast-error {
+  background: rgba(239, 68, 68, 0.95);
+  color: #fff;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.ia-toast-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ia-toast-hide {
+  opacity: 0 !important;
+  transform: translateY(10px) !important;
+}
+
+@keyframes ia-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
