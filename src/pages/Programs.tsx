@@ -179,9 +179,9 @@ function HeroSection({ activeTab, onTabChange }: { activeTab: TabFilter; onTabCh
           className="flex items-center justify-center gap-3 mb-10 flex-wrap"
         >
           {[
-            { label: '入门级 ¥999', color: '#10B981' },
-            { label: '进阶级 ¥1,999', color: '#F59E0B' },
-            { label: '专家级 ¥2,999', color: '#EF4444' },
+            { label: '入门级 ¥99', color: '#10B981' },
+            { label: '进阶级 ¥199', color: '#F59E0B' },
+            { label: '专家级 ¥299', color: '#EF4444' },
           ].map((badge, i) => (
             <motion.span
               key={badge.label}
@@ -254,13 +254,13 @@ function ComparisonTable() {
               <tr>
                 <th className="p-4 text-left text-white font-semibold text-sm bg-deep-space rounded-tl-xl">功能项</th>
                 <th className="p-4 text-center text-white font-semibold text-sm rounded-ttr-xl" style={{ backgroundColor: '#10B981' }}>
-                  入门级<div className="text-xs font-normal opacity-80">¥999</div>
+                  入门级<div className="text-xs font-normal opacity-80">¥99</div>
                 </th>
                 <th className="p-4 text-center text-white font-semibold text-sm" style={{ backgroundColor: '#F59E0B' }}>
-                  进阶级<div className="text-xs font-normal opacity-80">¥1,999</div>
+                  进阶级<div className="text-xs font-normal opacity-80">¥199</div>
                 </th>
                 <th className="p-4 text-center text-white font-semibold text-sm rounded-tr-xl" style={{ backgroundColor: '#EF4444' }}>
-                  专家级<div className="text-xs font-normal opacity-80">¥2,999</div>
+                  专家级<div className="text-xs font-normal opacity-80">¥299</div>
                 </th>
               </tr>
             </thead>

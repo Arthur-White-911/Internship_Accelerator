@@ -402,10 +402,10 @@ function StatsSection() {
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   const stats = [
-    { value: 50000, suffix: '+', label: '累计服务学生', icon: Users },
+    { value: 500, suffix: '+', label: '累计服务学生', icon: Users },
     { value: 92, suffix: '%', label: '实习通过率', icon: TrendingUp },
-    { value: 3200, suffix: '+', label: '合作企业', icon: Briefcase },
-    { value: 85000, suffix: '+', label: '面试模拟次数', icon: Award },
+    { value: 10, suffix: '+', label: '合作企业', icon: Briefcase },
+    { value: 2000, suffix: '+', label: '面试模拟次数', icon: Award },
   ];
 
   return (
@@ -421,7 +421,7 @@ function StatsSection() {
             用数据说话
           </h2>
           <p className="text-[#64748B] text-lg">
-            已有超过 50,000+ 高校学生通过实习加速器实现职业加速
+            已有超过 500+ 高校学生通过实习加速器实现职业加速
           </p>
         </motion.div>
 
@@ -563,7 +563,7 @@ function PricingSection() {
       name: '入门级',
       badge: '入门级',
       badgeColor: 'bg-success',
-      price: '999',
+      price: '99',
       period: '/学期',
       features: ['职业方向测评', '基础技能培训（录播）', '简历模板库', '常见面试题库', '社群答疑'],
       cta: '选择入门',
@@ -574,7 +574,7 @@ function PricingSection() {
       name: '进阶级',
       badge: '进阶级',
       badgeColor: 'bg-warning',
-      price: '1,999',
+      price: '199',
       period: '/学期',
       features: [
         '职业方向测评',
@@ -596,7 +596,7 @@ function PricingSection() {
       name: '专家级',
       badge: '专家级',
       badgeColor: 'bg-error',
-      price: '2,999',
+      price: '299',
       period: '/学期',
       features: [
         '进阶级全部内容',
