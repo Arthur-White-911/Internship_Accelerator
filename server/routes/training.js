@@ -140,7 +140,35 @@ router.post('/start', authMiddleware, async (req, res) => {
       createdAt: new Date().toISOString(),
     });
 
-    return res.json({ success: true, message: '预约成功，导师将在24小时内与你确认时间', data: session });
+    // 根据项目类型生成训练建议，供前端 AI 训练建议面板展示
+    const suggestionMap = {
+      softskill: [
+        `专注于「${project.title}」的核心要点，结合真实场景反复练习。`,
+        '训练前先梳理自己的薄弱点，有针对性地突破。',
+        '完成后及时复盘，记录收获与改进方向。',
+      ],
+      skill: [
+        `「${project.title}」是高频考察技能，建议结合实际项目巩固。`,
+        '遇到不懂的概念立即查阅文档，养成主动学习的习惯。',
+        '训练结束后尝试用自己的话总结核心知识点。',
+      ],
+      language: [
+        `语言训练贵在坚持，建议每天保持「${duration}分钟」的训练节奏。`,
+        '多进行输出练习（口说/写作），而不仅仅是被动输入。',
+        '遇到好的表达方式及时记录，形成自己的素材库。',
+      ],
+    };
+    const suggestions = suggestionMap[project.category] || [
+      `认真完成「${project.title}」的训练内容，注重实践与总结。`,
+      '保持专注，避免分心，提升单位时间的训练效率。',
+      '训练结束后与同学或导师交流，获取外部反馈。',
+    ];
+
+    return res.json({
+      success: true,
+      message: '训练计划已开始',
+      data: { ...session, suggestions },
+    });
   } catch (err) {
     console.error('[training start]', err);
     return res.status(500).json({ success: false, message: '服务器错误' });
@@ -162,24 +190,30 @@ router.get('/sessions', authMiddleware, async (req, res) => {
 router.get('/progress', authMiddleware, async (req, res) => {
   try {
     const sessions = await db.trainingSessions.findAsync({ userId: req.userId });
-    const completed = sessions.filter(s => s.status === 'completed').length;
-    const total = sessions.length;
-    const categories = {};
+
+    // 统计各分类的完成数量
+    const categoryCount = { skill: 0, language: 0, softskill: 0 };
+    const categoryTotal = { skill: 0, language: 0, softskill: 0 };
+
     sessions.forEach(s => {
       const project = TRAINING_PROJECTS.find(p => p.id === s.projectId);
-      if (project) {
-        categories[project.category] = (categories[project.category] || 0) + 1;
+      if (project && project.category in categoryTotal) {
+        categoryTotal[project.category] += 1;
+        if (s.status === 'completed') {
+          categoryCount[project.category] += 1;
+        }
       }
     });
-    return res.json({
-      success: true,
-      data: {
-        totalSessions: total,
-        completedSessions: completed,
-        progressRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-        categoryBreakdown: categories,
-      },
-    });
+
+    // 前端期望数组格式: [{ category, percent }]
+    const data = Object.keys(categoryTotal)
+      .filter(cat => categoryTotal[cat] > 0)
+      .map(cat => ({
+        category: cat,
+        percent: Math.round((categoryCount[cat] / categoryTotal[cat]) * 100),
+      }));
+
+    return res.json({ success: true, data });
   } catch (err) {
     return res.status(500).json({ success: false, message: '服务器错误' });
   }

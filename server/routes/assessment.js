@@ -156,12 +156,42 @@ router.post('/submit', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── 兼容旧版记录字段，确保所有记录都有前端期望的字段 ────────────────────
+function normalizeRecord(r) {
+  const safeNum = (v, fallback = 60) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : fallback;
+  };
+
+  // matchPercent: 新字段优先，兼容旧字段 overall
+  const matchPercent = safeNum(
+    r.matchPercent !== undefined ? r.matchPercent : r.overall,
+    65
+  );
+
+  // scores: 新字段优先，兼容旧字段名（technical→professional, problemSolving→practical）
+  const oldScores = r.scores || {};
+  const scores = {
+    professional:  safeNum(oldScores.professional  ?? oldScores.technical,     60),
+    practical:     safeNum(oldScores.practical      ?? oldScores.problemSolving, 60),
+    communication: safeNum(oldScores.communication,                              60),
+    teamwork:      safeNum(oldScores.teamwork,                                   60),
+    innovation:    safeNum(oldScores.innovation     ?? oldScores.creativity,     60),
+  };
+
+  const suggestions = Array.isArray(r.suggestions) && r.suggestions.length > 0
+    ? r.suggestions
+    : ['建议结合目标岗位要求，针对性地补充相关技能与项目经验。'];
+
+  return { ...r, matchPercent, scores, suggestions };
+}
+
 // ─── GET /api/assessment/history ──────────────────────────────────────────
 router.get('/history', authMiddleware, async (req, res) => {
   try {
     const records = await db.assessments.findAsync({ userId: req.userId });
     records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return res.json({ success: true, data: records });
+    return res.json({ success: true, data: records.map(normalizeRecord) });
   } catch (err) {
     return res.status(500).json({ success: false, message: '服务器错误' });
   }
@@ -173,7 +203,7 @@ router.get('/latest', authMiddleware, async (req, res) => {
     const records = await db.assessments.findAsync({ userId: req.userId });
     if (!records.length) return res.json({ success: true, data: null });
     records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    return res.json({ success: true, data: records[0] });
+    return res.json({ success: true, data: normalizeRecord(records[0]) });
   } catch (err) {
     return res.status(500).json({ success: false, message: '服务器错误' });
   }
