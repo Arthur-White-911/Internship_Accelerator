@@ -27,6 +27,7 @@ app.use('/api/assessment', require('./routes/assessment'));
 app.use('/api/interview', require('./routes/interview'));
 app.use('/api/programs', require('./routes/programs'));
 app.use('/api/training', require('./routes/training'));
+app.use('/api/jobs', require('./routes/jobs'));
 
 // 健康检查
 app.get('/api/health', (req, res) => {

@@ -13,6 +13,7 @@ const db = {
   interviewHistory: new Datastore({ filename: path.join(dbDir, 'interview.db'), autoload: true }),
   enrollments: new Datastore({ filename: path.join(dbDir, 'enrollments.db'), autoload: true }),
   trainingSessions: new Datastore({ filename: path.join(dbDir, 'training_sessions.db'), autoload: true }),
+  jobs: new Datastore({ filename: path.join(dbDir, 'jobs.db'), autoload: true }),
 };
 
 // 建立索引
@@ -24,6 +25,10 @@ db.trainingRecords.ensureIndex({ fieldName: 'userId' });
 db.interviewHistory.ensureIndex({ fieldName: 'userId' });
 db.enrollments.ensureIndex({ fieldName: 'userId' });
 db.trainingSessions.ensureIndex({ fieldName: 'userId' });
+db.jobs.ensureIndex({ fieldName: 'publish_date' });
+db.jobs.ensureIndex({ fieldName: 'district' });
+db.jobs.ensureIndex({ fieldName: 'category' });
+db.jobs.ensureIndex({ fieldName: 'source_platform' });
 
 // Promise 封装工具
 const promisify = (fn) => (...args) =>
@@ -82,5 +87,13 @@ db.enrollments.updateAsync = makeUpdateAsync(db.enrollments);
 // trainingSessions
 db.trainingSessions.findAsync = promisify(db.trainingSessions.find.bind(db.trainingSessions));
 db.trainingSessions.insertAsync = promisify(db.trainingSessions.insert.bind(db.trainingSessions));
+
+// jobs
+db.jobs.findAsync = promisify(db.jobs.find.bind(db.jobs));
+db.jobs.findOneAsync = promisify(db.jobs.findOne.bind(db.jobs));
+db.jobs.insertAsync = promisify(db.jobs.insert.bind(db.jobs));
+db.jobs.countAsync = promisify(db.jobs.count.bind(db.jobs));
+db.jobs.updateAsync = makeUpdateAsync(db.jobs);
+db.jobs.removeAsync = makeRemoveAsync(db.jobs);
 
 module.exports = db;

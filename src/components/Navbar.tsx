@@ -19,6 +19,7 @@ const navLinks = [
       { label: '录播课程', path: '/training?mode=recorded', description: '互联网运营、数据分析导论课', icon: Video },
     ],
   },
+  { label: '苏州招聘', path: '/jobs' },
   { label: '求职咨询', path: '/chat' },
 ];
 
