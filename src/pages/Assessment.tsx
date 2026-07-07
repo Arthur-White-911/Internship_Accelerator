@@ -612,17 +612,21 @@ function FormSection({
 function AnalysisResultPanel({
   result,
   history,
+  fullHistory,
   onDownloadReport,
   onStartTraining,
   onConsultMentor,
 }: {
   result: AnalysisResult;
   history: { date: string; title: string; score: number }[];
+  fullHistory: ApiHistoryItem[];
   onDownloadReport: () => void;
   onStartTraining: () => void;
   onConsultMentor: () => void;
 }) {
   const [showResult, setShowResult] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<ApiHistoryItem | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowResult(true), 300);
@@ -818,7 +822,7 @@ function AnalysisResultPanel({
                   )}
                   {history.map((entry, index) => (
                     <motion.div
-                      key={entry.date}
+                      key={entry.date + index}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{
@@ -839,11 +843,21 @@ function AnalysisResultPanel({
                           <p className="text-text-gray text-xs">{entry.date}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Award className="w-4 h-4 text-energy-cyan" />
-                        <span className="font-jetbrains text-lg font-bold text-energy-cyan">
-                          {entry.score}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Award className="w-4 h-4 text-energy-cyan" />
+                          <span className="font-jetbrains text-lg font-bold text-energy-cyan">
+                            {entry.score}
+                          </span>
+                        </div>
+                        {fullHistory[index] && (
+                          <button
+                            onClick={() => { setSelectedReport(fullHistory[index]); setShowReportModal(true); }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(0,212,255,0.1)] text-[#00D4FF] border border-[rgba(0,212,255,0.2)] hover:bg-[rgba(0,212,255,0.2)] transition-all duration-200"
+                          >
+                            查看报告
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   ))}
@@ -883,6 +897,146 @@ function AnalysisResultPanel({
           )}
         </AnimatePresence>
       </div>
+
+      {/* ═══════════════ Report Detail Modal ═══════════════ */}
+      <AnimatePresence>
+        {showReportModal && selectedReport && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowReportModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, ease: easeOutExpo }}
+              className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-6"
+              style={{ backgroundColor: '#0D1F3C', border: '1px solid rgba(0,212,255,0.15)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-white text-lg font-bold flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-energy-cyan" />
+                    能力测评报告详情
+                  </h3>
+                  <p className="text-text-gray text-xs mt-1">
+                    {selectedReport.major} - {selectedReport.careerGoal} ·{' '}
+                    {selectedReport.createdAt
+                      ? new Date(selectedReport.createdAt).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                      : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="w-8 h-8 rounded-lg bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-text-gray hover:text-white hover:bg-[rgba(255,255,255,0.1)] transition-all"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Overall Score */}
+              <div className="flex items-center gap-6 mb-6 p-4 rounded-xl bg-[rgba(10,22,40,0.6)]">
+                <div className="relative w-24 h-24 flex-shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="6" />
+                    <circle
+                      cx="40" cy="40" r="34" fill="none"
+                      stroke="#00D4FF" strokeWidth="6"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 34}`}
+                      strokeDashoffset={`${2 * Math.PI * 34 * (1 - (selectedReport.matchPercent ?? 0) / 100)}`}
+                      style={{ transition: 'stroke-dashoffset 0.8s ease' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-white font-bold text-xl font-outfit">{selectedReport.matchPercent ?? 0}</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-white text-2xl font-bold font-outfit">
+                    {selectedReport.matchPercent ?? 0}
+                    <span className="text-base text-text-gray">/100</span>
+                  </div>
+                  <p className="text-sm font-medium mt-1" style={{
+                    color: (selectedReport.matchPercent ?? 0) >= 85 ? '#10B981'
+                      : (selectedReport.matchPercent ?? 0) >= 70 ? '#00D4FF'
+                      : (selectedReport.matchPercent ?? 0) >= 55 ? '#F59E0B' : '#EF4444'
+                  }}>
+                    {(selectedReport.matchPercent ?? 0) >= 85 ? '超强匹配度'
+                      : (selectedReport.matchPercent ?? 0) >= 70 ? '良好匹配度'
+                      : (selectedReport.matchPercent ?? 0) >= 55 ? '中等匹配度' : '待提升'}
+                  </p>
+                  <p className="text-text-gray text-xs mt-1">{selectedReport.skillLevel} · {selectedReport.major}</p>
+                </div>
+              </div>
+
+              {/* Capability Scores */}
+              {selectedReport.scores && (
+                <div className="mb-6">
+                  <h4 className="text-energy-cyan text-sm font-semibold mb-4 flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4" />
+                    多维能力评分
+                  </h4>
+                  <div className="space-y-3">
+                    {[
+                      { label: '专业知识', score: selectedReport.scores.professional ?? 0, color: '#00D4FF' },
+                      { label: '实践能力', score: selectedReport.scores.practical ?? 0, color: '#6366F1' },
+                      { label: '沟通能力', score: selectedReport.scores.communication ?? 0, color: '#10B981' },
+                      { label: '团队协作', score: selectedReport.scores.teamwork ?? 0, color: '#F59E0B' },
+                      { label: '创新能力', score: selectedReport.scores.innovation ?? 0, color: '#EF4444' },
+                    ].map((cap) => (
+                      <div key={cap.label}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-text-gray text-xs">{cap.label}</span>
+                          <span className="font-mono text-sm font-bold" style={{ color: cap.color }}>{cap.score}</span>
+                        </div>
+                        <div className="h-1.5 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${cap.score}%`, backgroundColor: cap.color }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Suggestions */}
+              {selectedReport.suggestions && selectedReport.suggestions.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-[#F59E0B] text-sm font-semibold mb-3 flex items-center gap-1">
+                    <Lightbulb className="w-4 h-4" />
+                    成长建议
+                  </h4>
+                  <ul className="space-y-2">
+                    {selectedReport.suggestions.map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[#CBD5E1]">
+                        <Check className="w-4 h-4 text-[#F59E0B] mt-0.5 flex-shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="w-full mt-2 py-3 rounded-xl border border-[rgba(255,255,255,0.1)] text-text-gray text-sm font-medium hover:border-[rgba(0,212,255,0.3)] hover:text-white transition-all duration-200"
+              >
+                关闭
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
@@ -1095,6 +1249,7 @@ export default function Assessment() {
         <AnalysisResultPanel
           result={displayResult}
           history={displayHistory}
+          fullHistory={history}
           onDownloadReport={handleDownloadReport}
           onStartTraining={handleStartTraining}
           onConsultMentor={handleConsultMentor}
