@@ -55,6 +55,15 @@ interface MockFeedback {
   breakdown: { content: number; expression: number; logic: number };
 }
 
+interface HistoryRecord {
+  _id: string;
+  userId: string;
+  interviewType: string;
+  industry: string;
+  createdAt: string;
+  feedback: MockFeedback;
+}
+
 /* ─── Static Mock Questions ─── */
 const mockQuestions: Record<string, MockQ[]> = {
   '技术面试': [
@@ -209,6 +218,10 @@ export default function Interview() {
   const [allQuestions, setAllQuestions] = useState<InterviewQuestion[]>([]);
   const [categories, setCategories] = useState<string[]>(['全部']);
   const feedbackRef = useRef<HTMLDivElement>(null);
+  const [historyList, setHistoryList] = useState<HistoryRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<HistoryRecord | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const toast = useToast();
   const navigate = useNavigate();
@@ -243,6 +256,28 @@ export default function Interview() {
   useEffect(() => {
     fetchQuestions();
   }, [fetchQuestions]);
+
+  /* ── Fetch interview history on mount (logged-in users only) ── */
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    setHistoryLoading(true);
+    try {
+      const res = await interviewApi.history();
+      if (res.success && Array.isArray(res.data)) {
+        setHistoryList(res.data);
+      } else {
+        setHistoryList([]);
+      }
+    } catch {
+      setHistoryList([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const filteredQuestions = allQuestions;
 
@@ -297,6 +332,15 @@ export default function Interview() {
         setFeedback(res.data);
         setMockCompleted(true);
         setShowFeedback(true);
+        // Refresh history list after successful submission
+        try {
+          const historyRes = await interviewApi.history();
+          if (historyRes.success && Array.isArray(historyRes.data)) {
+            setHistoryList(historyRes.data);
+          }
+        } catch {
+          // Silently fail history refresh
+        }
       } else {
         toast('获取反馈失败', 'error');
       }
@@ -892,10 +936,213 @@ export default function Interview() {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* ── History Reports Panel ── */}
+              {user && (
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="glass-card rounded-2xl p-6 mt-6"
+                >
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-[rgba(0,212,255,0.1)] flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-[#00D4FF]" />
+                    </div>
+                    <h3 className="font-outfit text-lg font-bold text-white">历史报告</h3>
+                    {historyList.length > 0 && (
+                      <span className="ml-auto text-xs text-[#64748B]">共 {historyList.length} 条记录</span>
+                    )}
+                  </div>
+
+                  {historyLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 text-[#00D4FF] animate-spin" />
+                      <span className="text-[#64748B] text-sm ml-2">加载中...</span>
+                    </div>
+                  ) : historyList.length === 0 ? (
+                    <div className="text-center py-8">
+                      <MessageSquare className="w-10 h-10 text-[#64748B] mx-auto mb-3 opacity-30" />
+                      <p className="text-[#64748B] text-sm">暂无历史面试记录</p>
+                      <p className="text-[#64748B] text-xs mt-1">完成模拟面试后，报告将自动保存在此处</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {historyList.map((record, index) => {
+                        const score = record.feedback?.score ?? 0;
+                        const scoreColor = score >= 90 ? '#10B981' : score >= 75 ? '#00D4FF' : score >= 60 ? '#F59E0B' : '#EF4444';
+                        const dateStr = new Date(record.createdAt).toLocaleDateString('zh-CN', {
+                          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                        });
+                        return (
+                          <motion.div
+                            key={record._id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, delay: index * 0.08 }}
+                            className="flex items-center justify-between p-4 rounded-xl bg-[rgba(10,22,40,0.5)] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(0,212,255,0.15)] transition-all duration-200"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-lg bg-[rgba(0,212,255,0.08)] flex items-center justify-center flex-shrink-0">
+                                <BarChart3 className="w-4 h-4 text-[#00D4FF]" />
+                              </div>
+                              <div>
+                                <p className="text-white text-sm font-medium">{record.interviewType} · {record.industry}</p>
+                                <p className="text-[#64748B] text-xs mt-0.5">{dateStr}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <span className="font-mono font-bold text-lg" style={{ color: scoreColor }}>{score}</span>
+                                <span className="text-[#64748B] text-xs">/100</span>
+                              </div>
+                              <button
+                                onClick={() => { setSelectedReport(record); setShowReportModal(true); }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(0,212,255,0.1)] text-[#00D4FF] border border-[rgba(0,212,255,0.2)] hover:bg-[rgba(0,212,255,0.2)] transition-all duration-200"
+                              >
+                                查看报告
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
       </section>
+
+      {/* ═══════════════ Report Detail Modal ═══════════════ */}
+      <AnimatePresence>
+        {showReportModal && selectedReport && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowReportModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
+              className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl p-6"
+              style={{ backgroundColor: '#0D1F3C', border: '1px solid rgba(0,212,255,0.15)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-white text-lg font-bold flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-[#00D4FF]" />
+                    面试报告详情
+                  </h3>
+                  <p className="text-[#64748B] text-xs mt-1">
+                    {selectedReport.interviewType} · {selectedReport.industry} ·{' '}
+                    {new Date(selectedReport.createdAt).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowReportModal(false)}
+                  className="w-8 h-8 rounded-lg bg-[rgba(255,255,255,0.05)] flex items-center justify-center text-[#64748B] hover:text-white hover:bg-[rgba(255,255,255,0.1)] transition-all"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Overall Score */}
+              <div className="flex items-center gap-6 mb-6 p-4 rounded-xl bg-[rgba(10,22,40,0.6)]">
+                <ProgressRing progress={selectedReport.feedback?.score ?? 0} size={90} strokeWidth={6} />
+                <div>
+                  <div className="text-white text-3xl font-bold font-outfit">
+                    {selectedReport.feedback?.score ?? 0}
+                    <span className="text-lg text-[#94A3B8]">/100</span>
+                  </div>
+                  <p className="text-sm font-medium mt-1" style={{
+                    color: (selectedReport.feedback?.score ?? 0) >= 90 ? '#10B981'
+                      : (selectedReport.feedback?.score ?? 0) >= 75 ? '#00D4FF'
+                      : (selectedReport.feedback?.score ?? 0) >= 60 ? '#F59E0B' : '#EF4444'
+                  }}>
+                    {(selectedReport.feedback?.score ?? 0) >= 90 ? '表现优秀'
+                      : (selectedReport.feedback?.score ?? 0) >= 75 ? '综合表现良好'
+                      : (selectedReport.feedback?.score ?? 0) >= 60 ? '表现尚可，仍有提升空间' : '需要加强练习'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Category Scores */}
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {[
+                  { label: '回答完整性', score: selectedReport.feedback?.breakdown?.content ?? 0, color: '#00D4FF' },
+                  { label: '逻辑清晰度', score: selectedReport.feedback?.breakdown?.logic ?? 0, color: '#6366F1' },
+                  { label: '表达流畅度', score: selectedReport.feedback?.breakdown?.expression ?? 0, color: '#10B981' },
+                ].map((cat) => (
+                  <div key={cat.label} className="bg-[rgba(10,22,40,0.5)] rounded-xl p-3">
+                    <div className="text-[#64748B] text-xs mb-2">{cat.label}</div>
+                    <div className="text-white font-bold text-lg font-outfit">{cat.score}</div>
+                    <div className="h-1.5 bg-[rgba(30,58,95,0.5)] rounded-full mt-2 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${cat.score}%`, backgroundColor: cat.color }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Strengths */}
+              {selectedReport.feedback?.strengths && selectedReport.feedback.strengths.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-[#10B981] text-sm font-semibold mb-3 flex items-center gap-1">
+                    <TrendingUp className="w-4 h-4" />
+                    优势亮点
+                  </h4>
+                  <ul className="space-y-2">
+                    {selectedReport.feedback.strengths.map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[#CBD5E1]">
+                        <CheckCircle className="w-4 h-4 text-[#10B981] mt-0.5 flex-shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Improvements */}
+              {selectedReport.feedback?.improvements && selectedReport.feedback.improvements.length > 0 && (
+                <div className="mb-5">
+                  <h4 className="text-[#F59E0B] text-sm font-semibold mb-3 flex items-center gap-1">
+                    <Target className="w-4 h-4" />
+                    改进建议
+                  </h4>
+                  <ul className="space-y-2">
+                    {selectedReport.feedback.improvements.map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[#CBD5E1]">
+                        <Star className="w-4 h-4 text-[#F59E0B] mt-0.5 flex-shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                onClick={() => setShowReportModal(false)}
+                className="w-full mt-2 py-3 rounded-xl border border-[rgba(255,255,255,0.1)] text-[#94A3B8] text-sm font-medium hover:border-[rgba(0,212,255,0.3)] hover:text-white transition-all duration-200"
+              >
+                关闭
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
