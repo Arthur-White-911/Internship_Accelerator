@@ -80,7 +80,7 @@ const trainingTabs: TrainingTab[] = [
     key: 'skill',
     label: '技能训练',
     icon: Code2,
-    image: '/training-coding.png',
+    image: '/training-coding.jpg',
     description: '覆盖前端、后端、算法、工具等核心技术栈，从基础到进阶的系统课程',
     stats: '120+ 课程 · 45+ 实战项目 · 30+ 小时',
   },
@@ -88,7 +88,7 @@ const trainingTabs: TrainingTab[] = [
     key: 'language',
     label: '语言训练',
     icon: Languages,
-    image: '/training-language.png',
+    image: '/training-language.jpg',
     description: '提升职场英语能力，从日常口语到商务沟通的全面训练',
     stats: '60+ 课程 · 20+ 模拟场景 · AI发音评测',
   },
@@ -96,7 +96,7 @@ const trainingTabs: TrainingTab[] = [
     key: 'softskill',
     label: '软技能训练',
     icon: UsersRound,
-    image: '/training-softskill.png',
+    image: '/training-softskill.jpg',
     description: '沟通能力、领导力、时间管理 — 职场软实力的系统培养',
     stats: '40+ 课程 · 15+ 互动训练 · 情景模拟',
   },
@@ -554,7 +554,7 @@ export default function Training() {
               className="flex-shrink-0"
             >
               <img
-                src="/training-coding.png"
+                src="/training-coding.jpg"
                 alt="自主训练"
                 className="w-[350px] lg:w-[400px] rounded-3xl border border-[rgba(0,212,255,0.15)]"
               />

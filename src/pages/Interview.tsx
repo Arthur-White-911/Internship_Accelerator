@@ -371,7 +371,7 @@ export default function Interview() {
               className="flex-shrink-0"
             >
               <img
-                src="/interview-mockup.png"
+                src="/interview-mockup.jpg"
                 alt="面试模拟"
                 className="w-[400px] lg:w-[500px] rounded-3xl border border-[rgba(0,212,255,0.15)]"
                 style={{ transform: 'rotate(2deg)' }}

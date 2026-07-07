@@ -95,7 +95,7 @@ function mapApiProgram(apiData: any): Program {
     badgeColor: meta.badgeColor,
     price: `¥${apiData.price.toLocaleString()}`,
     duration: apiData.duration,
-    image: apiData.image || '/program-starter.png',
+    image: apiData.image || '/program-starter.jpg',
     title: `${meta.tier}培养方案`,
     description: apiData.description,
     features: apiData.features || [],
@@ -145,7 +145,7 @@ function HeroSection({ activeTab, onTabChange }: { activeTab: TabFilter; onTabCh
     <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden hero-gradient">
       <div className="absolute inset-0">
         <img
-          src="/program-starter.png"
+          src="/program-starter.jpg"
           alt=""
           className="absolute right-0 top-1/2 -translate-y-1/2 w-1/2 h-auto opacity-20 object-cover"
           onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

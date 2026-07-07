@@ -699,21 +699,21 @@ function TestimonialsSection() {
 
   const testimonials = [
     {
-      avatar: '/student-avatar-1.png',
+      avatar: '/student-avatar-1.jpg',
       name: '张雨萌',
       school: '北京大学 · 计算机科学与技术',
       content: '通过职业能力分析，我发现自己在算法方面还有很大提升空间。按照培养方案训练两个月后，成功拿到了字节跳动的实习offer！',
       rating: 5,
     },
     {
-      avatar: '/student-avatar-2.png',
+      avatar: '/student-avatar-2.jpg',
       name: '李明轩',
       school: '清华大学 · 软件工程',
       content: '模拟面试功能太实用了！AI面试官的问题非常贴近实际，每次练习后都有详细的改进建议。面试当天完全不紧张。',
       rating: 5,
     },
     {
-      avatar: '/student-avatar-3.png',
+      avatar: '/student-avatar-3.jpg',
       name: '王思琪',
       school: '浙江大学 · 信息与通信工程',
       content: '从完全不知道怎么写简历，到导师帮我精修出一份让HR眼前一亮的简历，整个过程只花了两周。现在已经在腾讯实习三个月了！',

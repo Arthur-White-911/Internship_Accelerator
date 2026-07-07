@@ -281,7 +281,7 @@ function HeroSection() {
           className="relative max-w-md mx-auto"
         >
           <img
-            src="/assessment-illustration.png"
+            src="/assessment-illustration.jpg"
             alt="能力分析配图"
             className="w-full h-auto rounded-2xl opacity-80"
             onError={(e) => {

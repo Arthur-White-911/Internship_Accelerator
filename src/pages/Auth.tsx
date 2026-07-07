@@ -130,7 +130,7 @@ function BrandPanel() {
           className="flex-1 flex flex-col items-center justify-center my-8"
         >
           <motion.img
-            src="/auth-illustration.png"
+            src="/auth-illustration.jpg"
             alt="职业加速之旅"
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}

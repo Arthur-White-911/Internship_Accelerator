@@ -229,7 +229,7 @@ export default function Chat() {
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
-              src="/chat-avatar-ai.png"
+              src="/chat-avatar-ai.jpg"
               alt="AI导师"
               className="w-9 h-9 rounded-full object-cover"
             />
@@ -278,7 +278,7 @@ export default function Chat() {
                     className="flex items-start gap-3"
                   >
                     <img
-                      src="/chat-avatar-ai.png"
+                      src="/chat-avatar-ai.jpg"
                       alt="AI"
                       className="w-8 h-8 rounded-full object-cover shrink-0 mt-1"
                     />
@@ -340,7 +340,7 @@ export default function Chat() {
                   className="flex items-start gap-3"
                 >
                   <img
-                    src="/chat-avatar-ai.png"
+                    src="/chat-avatar-ai.jpg"
                     alt="AI"
                     className="w-8 h-8 rounded-full object-cover shrink-0"
                   />
