@@ -560,51 +560,47 @@ function PricingSection() {
 
   const plans = [
     {
-      name: '入门级',
-      badge: '入门级',
+      name: '入门',
+      badge: '入门',
       badgeColor: 'bg-success',
-      price: '99',
-      period: '/学期',
-      features: ['职业方向测评', '基础技能培训（录播）', '简历模板库', '常见面试题库', '社群答疑'],
-      cta: '选择入门',
+      price: '免费',
+      period: '',
+      features: ['职业方向测评', '基础技能培训（录播）', '简历模板库', '面试题库 + AI模拟 x2次', '社群答疑'],
+      cta: '免费开始',
       ctaColor: 'bg-success hover:bg-[#059669]',
       recommended: false,
     },
     {
-      name: '进阶级',
-      badge: '进阶级',
+      name: '进阶',
+      badge: '进阶',
       badgeColor: 'bg-warning',
-      price: '199',
-      period: '/学期',
+      price: '399',
+      period: '/月',
       features: [
-        '职业方向测评',
-        '基础技能培训（录播）',
-        '简历模板库',
-        '常见面试题库',
-        '社群答疑',
-        '1对1简历精修',
-        '模拟面试 x 5次',
-        '导师线上指导 x 3次',
-        '行业报告与趋势分析',
-        '岗位推荐优先权',
+        '职业方向测评 + 深度能力分析',
+        '专业技能培训（录播 + 直播）',
+        '1对1简历精修 x2次',
+        'AI模拟面试 x4次 + 详细反馈',
+        '导师线上1对1指导 x4次',
+        '行业报告 + 优先岗位推送',
       ],
       cta: '选择进阶',
       ctaColor: 'energy-gradient',
       recommended: true,
     },
     {
-      name: '专家级',
-      badge: '专家级',
+      name: '专家',
+      badge: '专家',
       badgeColor: 'bg-error',
-      price: '299',
-      period: '/学期',
+      price: '1999',
+      period: '/月起',
       features: [
-        '进阶级全部内容',
-        '全程1对1导师陪伴',
-        '不限次模拟面试',
-        '企业内推资源',
-        '项目实战机会',
-        '实习保障协议',
+        '1对1导师陪跑 x4次',
+        '1对1简历精修 x4次',
+        'AI + 真人模拟面试 x4次',
+        '企业内推资源 + 专属岗位推送',
+        '项目实战 + 行业报告',
+        '实习保障协议（未获offer全额退款）',
       ],
       cta: '选择专家',
       ctaColor: 'bg-error hover:bg-[#DC2626]',
@@ -655,7 +651,7 @@ function PricingSection() {
               {/* Price */}
               <div className="mb-6">
                 <span className="font-outfit text-4xl font-bold text-deep-space">
-                  &yen;{plan.price}
+                  {plan.price === '免费' ? '免费' : <>&yen;{plan.price}</>}
                 </span>
                 <span className="text-[#64748B] text-sm ml-1">{plan.period}</span>
               </div>
@@ -665,9 +661,9 @@ function PricingSection() {
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2.5 text-sm text-[#334155]">
                     <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                      plan.name === '入门级'
+                      plan.name === '入门'
                         ? 'bg-success'
-                        : plan.name === '进阶级'
+                        : plan.name === '进阶'
                         ? 'bg-energy-cyan'
                         : 'bg-error'
                     }`} />
