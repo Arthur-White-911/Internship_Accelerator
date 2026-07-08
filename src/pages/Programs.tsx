@@ -61,8 +61,8 @@ const staggerContainer = {
 /* ─── Price Map ─── */
 const PRICE_MAP: Record<string, { price: string; priceNote?: string }> = {
   '初级': { price: '免费', priceNote: '永久免费' },
-  '中级': { price: '¥399', priceNote: '/学期' },
-  '高级': { price: '¥1999', priceNote: '–¥2999/学期' },
+  '中级': { price: '¥399', priceNote: '/月' },
+  '高级': { price: '¥1999', priceNote: '–¥2999/月' },
 };
 
 /* ─── API Data Mapper ─── */
@@ -140,11 +140,11 @@ const comparisonData = [
 ];
 
 const faqData: FAQItem[] = [
-  { question: '培养方案的有效期是多久？', answer: '购买后当学期有效（约4个月），如需延期可联系客服申请一次免费延期。' },
+  { question: '培养方案的有效期是多久？', answer: '购买后当月有效（1个月），如需延期可联系客服申请一次免费延期。' },
   { question: '可以中途升级方案吗？', answer: '可以的！已购买入门或进阶方案的学员可随时补差价升级至更高级别方案。' },
   { question: '导师都是什么背景？', answer: '我们的导师均来自一线互联网大厂、知名金融机构和咨询公司，拥有5年以上工作经验。' },
   { question: '模拟面试是真人还是AI？', answer: '进阶方案以AI模拟面试为主，专家方案提供真人导师模拟面试。AI面试同样具备专业反馈能力。' },
-  { question: '实习保障协议具体是什么？', answer: '专家方案学员在完成全部训练内容后，如在学期内未获得任何实习offer，可申请全额退款。' },
+  { question: '实习保障协议具体是什么？', answer: '专家方案学员在完成全部训练内容后，如在1个月内未获得任何实习offer，可申请全额退款。' },
   { question: '如何开始？需要准备什么？', answer: '只需在平台完成注册和职业能力测评，系统会自动为你推荐最适合的培养方案。' },
 ];
 
@@ -165,8 +165,8 @@ function PlanSelector({
 }) {
   const plans: { level: PlanLevel; label: string; price: string; color: string }[] = [
     { level: '入门', label: '入门方案', price: '免费', color: '#10B981' },
-    { level: '进阶', label: '进阶方案', price: '¥399/学期', color: '#F59E0B' },
-    { level: '专家', label: '专家方案', price: '¥1999–¥2999/学期', color: '#EF4444' },
+    { level: '进阶', label: '进阶方案', price: '¥399/月', color: '#F59E0B' },
+    { level: '专家', label: '专家方案', price: '¥1999–¥2999/月', color: '#EF4444' },
   ];
 
   return (
@@ -522,10 +522,10 @@ function ComparisonTable() {
                   入门<div className="text-xs font-normal opacity-80">免费</div>
                 </th>
                 <th className="p-4 text-center text-white font-semibold text-sm" style={{ backgroundColor: '#F59E0B' }}>
-                  进阶<div className="text-xs font-normal opacity-80">¥399/学期</div>
+                  进阶<div className="text-xs font-normal opacity-80">¥399/月</div>
                 </th>
                 <th className="p-4 text-center text-white font-semibold text-sm rounded-tr-xl" style={{ backgroundColor: '#EF4444' }}>
-                  专家<div className="text-xs font-normal opacity-80">¥1999–¥2999/学期</div>
+                  专家<div className="text-xs font-normal opacity-80">¥1999–¥2999/月</div>
                 </th>
               </tr>
             </thead>
