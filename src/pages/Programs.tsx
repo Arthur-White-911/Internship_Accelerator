@@ -470,9 +470,9 @@ function HeroSection() {
           className="flex items-center justify-center gap-3 mb-4 flex-wrap"
         >
           {[
-            { label: '入门 · 免费', color: '#10B981' },
-            { label: '进阶 · ¥399', color: '#F59E0B' },
-            { label: '专家 · ¥1999–¥2999', color: '#EF4444' },
+          { label: '入门 · 免费', color: '#10B981' },
+          { label: '进阶 · ¥399/月', color: '#F59E0B' },
+          { label: '专家 · ¥1999–¥2999/月', color: '#EF4444' },
           ].map((badge, i) => (
             <motion.span
               key={badge.label}
