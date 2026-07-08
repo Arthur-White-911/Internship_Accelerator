@@ -21,13 +21,15 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 /* ─── Types ─── */
-type TabFilter = '全部方案' | '初级方案' | '中级方案' | '高级方案';
+type PlanLevel = '入门' | '进阶' | '专家';
 
 interface Program {
   id: number;
   tier: string;
+  level: PlanLevel;
   badgeColor: string;
   price: string;
+  priceNote?: string;
   duration: string;
   image: string;
   title: string;
@@ -37,7 +39,6 @@ interface Program {
   ctaText: string;
   tag?: string;
   tagColor?: string;
-  filterCategory: string;
 }
 
 interface FAQItem {
@@ -57,53 +58,70 @@ const staggerContainer = {
   },
 };
 
+/* ─── Price Map ─── */
+const PRICE_MAP: Record<string, { price: string; priceNote?: string }> = {
+  '初级': { price: '免费', priceNote: '永久免费' },
+  '中级': { price: '¥399', priceNote: '/学期' },
+  '高级': { price: '¥1999', priceNote: '–¥2999/学期' },
+};
+
 /* ─── API Data Mapper ─── */
 function mapApiProgram(apiData: any): Program {
-  const levelMap: Record<string, { tier: string; filterCategory: TabFilter; badgeColor: string; ctaColor: string; ctaText: string; tag?: string; tagColor?: string }> = {
+  const levelMap: Record<string, {
+    tier: string;
+    level: PlanLevel;
+    badgeColor: string;
+    ctaColor: string;
+    ctaText: string;
+    tag?: string;
+    tagColor?: string;
+  }> = {
     '初级': {
-      tier: '入门级',
-      filterCategory: '初级方案',
+      tier: '入门',
+      level: '入门',
       badgeColor: '#10B981',
       ctaColor: 'bg-success hover:bg-[#059669]',
-      ctaText: '选择入门方案',
+      ctaText: '免费开始',
     },
     '中级': {
-      tier: '进阶级',
-      filterCategory: '中级方案',
+      tier: '进阶',
+      level: '进阶',
       badgeColor: '#F59E0B',
       ctaColor: 'energy-gradient',
-      ctaText: '选择进阶方案',
+      ctaText: '选择进阶',
       tag: '最受欢迎',
       tagColor: '#F59E0B',
     },
     '高级': {
-      tier: '专家级',
-      filterCategory: '高级方案',
+      tier: '专家',
+      level: '专家',
       badgeColor: '#EF4444',
       ctaColor: 'bg-error hover:bg-[#DC2626]',
-      ctaText: '选择专家方案',
+      ctaText: '选择专家',
       tag: '最佳保障',
       tagColor: '#EF4444',
     },
   };
 
   const meta = levelMap[apiData.level] || levelMap['初级'];
+  const priceInfo = PRICE_MAP[apiData.level] || PRICE_MAP['初级'];
 
   return {
     id: apiData.id,
     tier: meta.tier,
+    level: meta.level,
     badgeColor: meta.badgeColor,
-    price: `¥${apiData.price.toLocaleString()}`,
+    price: priceInfo.price,
+    priceNote: priceInfo.priceNote,
     duration: apiData.duration,
     image: apiData.image || '/program-starter.jpg',
-    title: `${meta.tier}培养方案`,
+    title: `${meta.tier}方案`,
     description: apiData.description,
     features: apiData.features || [],
     ctaColor: meta.ctaColor,
     ctaText: meta.ctaText,
     tag: meta.tag,
     tagColor: meta.tagColor,
-    filterCategory: meta.filterCategory,
   };
 }
 
@@ -123,10 +141,10 @@ const comparisonData = [
 
 const faqData: FAQItem[] = [
   { question: '培养方案的有效期是多久？', answer: '购买后当学期有效（约4个月），如需延期可联系客服申请一次免费延期。' },
-  { question: '可以中途升级方案吗？', answer: '可以的！已购买入门级或进阶级的学员可随时补差价升级至更高级别方案。' },
+  { question: '可以中途升级方案吗？', answer: '可以的！已购买入门或进阶方案的学员可随时补差价升级至更高级别方案。' },
   { question: '导师都是什么背景？', answer: '我们的导师均来自一线互联网大厂、知名金融机构和咨询公司，拥有5年以上工作经验。' },
-  { question: '模拟面试是真人还是AI？', answer: '进阶级以AI模拟面试为主，专家级提供真人导师模拟面试。AI面试同样具备专业反馈能力。' },
-  { question: '实习保障协议具体是什么？', answer: '专家级学员在完成全部训练内容后，如在学期内未获得任何实习offer，可申请全额退款。' },
+  { question: '模拟面试是真人还是AI？', answer: '进阶方案以AI模拟面试为主，专家方案提供真人导师模拟面试。AI面试同样具备专业反馈能力。' },
+  { question: '实习保障协议具体是什么？', answer: '专家方案学员在完成全部训练内容后，如在学期内未获得任何实习offer，可申请全额退款。' },
   { question: '如何开始？需要准备什么？', answer: '只需在平台完成注册和职业能力测评，系统会自动为你推荐最适合的培养方案。' },
 ];
 
@@ -137,12 +155,285 @@ const processSteps = [
   { number: '04', icon: <Rocket className="w-6 h-6" />, title: '岗位对接', description: '精准推荐岗位，导师辅导面试，拿到心仪offer' },
 ];
 
-/* ─── Hero Section ─── */
-function HeroSection({ activeTab, onTabChange }: { activeTab: TabFilter; onTabChange: (tab: TabFilter) => void }) {
-  const tabs: TabFilter[] = ['全部方案', '初级方案', '中级方案', '高级方案'];
+/* ─── Plan Selector (交互切换按钮) ─── */
+function PlanSelector({
+  activeLevel,
+  onSelect,
+}: {
+  activeLevel: PlanLevel;
+  onSelect: (level: PlanLevel) => void;
+}) {
+  const plans: { level: PlanLevel; label: string; price: string; color: string }[] = [
+    { level: '入门', label: '入门方案', price: '免费', color: '#10B981' },
+    { level: '进阶', label: '进阶方案', price: '¥399/学期', color: '#F59E0B' },
+    { level: '专家', label: '专家方案', price: '¥1999–¥2999/学期', color: '#EF4444' },
+  ];
 
   return (
-    <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden hero-gradient">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4 mb-12">
+      {plans.map((plan) => {
+        const isActive = activeLevel === plan.level;
+        return (
+          <motion.button
+            key={plan.level}
+            onClick={() => onSelect(plan.level)}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className={`relative flex flex-col items-center gap-1 px-8 py-5 rounded-2xl border-2 transition-all duration-300 min-w-[160px] ${
+              isActive
+                ? 'text-white shadow-lg'
+                : 'border-[rgba(255,255,255,0.1)] text-text-gray hover:text-white hover:border-[rgba(255,255,255,0.25)] bg-[rgba(255,255,255,0.03)]'
+            }`}
+            style={isActive ? { borderColor: plan.color, backgroundColor: `${plan.color}18` } : {}}
+          >
+            {isActive && (
+              <motion.div
+                layoutId="activePlanBg"
+                className="absolute inset-0 rounded-2xl"
+                style={{ backgroundColor: `${plan.color}15`, borderRadius: '1rem' }}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+            <span
+              className="relative z-10 text-base font-bold"
+              style={isActive ? { color: plan.color } : {}}
+            >
+              {plan.label}
+            </span>
+            <span
+              className="relative z-10 text-sm font-semibold"
+              style={isActive ? { color: plan.color } : {}}
+            >
+              {plan.price}
+            </span>
+            {isActive && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: plan.color }}
+              >
+                <CheckCircle2 className="w-3 h-3 text-white" />
+              </motion.div>
+            )}
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Program Detail Card (单个方案详情) ─── */
+function ProgramDetailCard({
+  program,
+  onEnroll,
+  enrollingId,
+}: {
+  program: Program;
+  onEnroll: (id: number) => void;
+  enrollingId: number | null;
+}) {
+  return (
+    <motion.div
+      key={program.level}
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -30 }}
+      transition={{ duration: 0.5, ease: easeOutExpo }}
+      className="glass-card rounded-2xl p-6 sm:p-8 lg:p-12 border-2 transition-all duration-400"
+      style={{ borderColor: `${program.badgeColor}40` }}
+    >
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        {/* Image */}
+        <div className="lg:w-[38%] flex-shrink-0">
+          <div className="relative rounded-xl overflow-hidden">
+            <img
+              src={program.image}
+              alt={program.title}
+              className="w-full h-52 sm:h-60 lg:h-72 object-cover rounded-xl"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+            <div
+              className="hidden w-full h-52 sm:h-60 lg:h-72 rounded-xl items-center justify-center"
+              style={{ backgroundColor: `${program.badgeColor}15` }}
+            >
+              <GraduationCap className="w-20 h-20" style={{ color: program.badgeColor, opacity: 0.4 }} />
+            </div>
+            {program.tag && (
+              <div
+                className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold text-white"
+                style={{ backgroundColor: program.tagColor }}
+              >
+                {program.tag}
+              </div>
+            )}
+          </div>
+
+          {/* Price box */}
+          <div
+            className="mt-4 rounded-xl p-4 text-center"
+            style={{ backgroundColor: `${program.badgeColor}12`, border: `1px solid ${program.badgeColor}30` }}
+          >
+            <p className="text-text-gray text-xs mb-1">方案定价</p>
+            <p className="font-jetbrains font-bold text-3xl" style={{ color: program.badgeColor }}>
+              {program.price}
+            </p>
+            {program.priceNote && (
+              <p className="text-text-gray text-xs mt-0.5">{program.priceNote}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="lg:w-[62%] flex flex-col">
+          <div className="flex items-center gap-3 mb-3">
+            <span
+              className="px-4 py-1.5 rounded-full text-sm font-bold text-white"
+              style={{ backgroundColor: program.badgeColor }}
+            >
+              {program.tier}方案
+            </span>
+            <div className="flex items-center gap-1 text-text-gray text-xs">
+              <Clock className="w-3.5 h-3.5" />
+              {program.duration}
+            </div>
+          </div>
+
+          <h3 className="font-outfit text-2xl sm:text-3xl font-bold text-white mb-3">
+            {program.title}
+          </h3>
+
+          <p className="text-text-gray text-sm leading-relaxed mb-6">{program.description}</p>
+
+          {/* Features list */}
+          <motion.ul
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="space-y-3 mb-8"
+          >
+            {program.features.map((feature) => (
+              <motion.li
+                key={feature}
+                variants={{
+                  hidden: { opacity: 0, x: 20 },
+                  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: easeOutExpo } },
+                }}
+                className="flex items-start gap-3"
+              >
+                <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: program.badgeColor }} />
+                <span className="text-white/80 text-sm">{feature}</span>
+              </motion.li>
+            ))}
+          </motion.ul>
+
+          {/* Enroll button */}
+          <div className="mt-auto">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onEnroll(program.id)}
+              disabled={enrollingId === program.id}
+              className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl text-white text-sm font-semibold shadow-glow transition-all duration-200 ${program.ctaColor} disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {enrollingId === program.id ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  报名中...
+                </>
+              ) : (
+                <>
+                  {program.ctaText}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </motion.button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Programs Detail Section ─── */
+function ProgramsDetailSection({
+  activeLevel,
+  onLevelChange,
+  programs,
+  onEnroll,
+  enrollingId,
+  loading,
+}: {
+  activeLevel: PlanLevel;
+  onLevelChange: (level: PlanLevel) => void;
+  programs: Program[];
+  onEnroll: (id: number) => void;
+  enrollingId: number | null;
+  loading: boolean;
+}) {
+  const currentProgram = programs.find((p) => p.level === activeLevel);
+
+  return (
+    <section className="py-16 sm:py-24 bg-deep-space">
+      <div className="section-container">
+        {/* Section header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: easeOutExpo }}
+          className="text-center mb-10"
+        >
+          <h2 className="font-outfit text-2xl sm:text-3xl font-bold text-white mb-3">选择你的方案</h2>
+          <p className="text-text-gray text-sm">点击下方按钮切换查看各方案详情</p>
+        </motion.div>
+
+        {/* Plan selector buttons */}
+        <PlanSelector activeLevel={activeLevel} onSelect={onLevelChange} />
+
+        {/* Detail card */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-10 h-10 text-energy-cyan animate-spin mb-4" />
+            <p className="text-text-gray text-sm">加载培养方案...</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {currentProgram ? (
+              <ProgramDetailCard
+                key={activeLevel}
+                program={currentProgram}
+                onEnroll={onEnroll}
+                enrollingId={enrollingId}
+              />
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center py-16"
+              >
+                <GraduationCap className="w-12 h-12 text-text-gray mx-auto mb-4 opacity-30" />
+                <p className="text-text-gray text-sm">暂无该方案数据</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ─── Hero Section ─── */
+function HeroSection() {
+  return (
+    <section className="relative min-h-[44vh] flex items-center justify-center overflow-hidden hero-gradient">
       <div className="absolute inset-0">
         <img
           src="/program-starter.jpg"
@@ -176,12 +467,12 @@ function HeroSection({ activeTab, onTabChange }: { activeTab: TabFilter; onTabCh
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.4, ease: easeOutExpo }}
-          className="flex items-center justify-center gap-3 mb-10 flex-wrap"
+          className="flex items-center justify-center gap-3 mb-4 flex-wrap"
         >
           {[
-            { label: '入门级 ¥99', color: '#10B981' },
-            { label: '进阶级 ¥199', color: '#F59E0B' },
-            { label: '专家级 ¥299', color: '#EF4444' },
+            { label: '入门 · 免费', color: '#10B981' },
+            { label: '进阶 · ¥399', color: '#F59E0B' },
+            { label: '专家 · ¥1999–¥2999', color: '#EF4444' },
           ].map((badge, i) => (
             <motion.span
               key={badge.label}
@@ -193,32 +484,6 @@ function HeroSection({ activeTab, onTabChange }: { activeTab: TabFilter; onTabCh
             >
               {badge.label}
             </motion.span>
-          ))}
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.6, ease: easeOutExpo }}
-          className="inline-flex items-center gap-1 p-1 rounded-xl bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)]"
-        >
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => onTabChange(tab)}
-              className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === tab ? 'text-deep-space' : 'text-text-gray hover:text-white'
-              }`}
-            >
-              {activeTab === tab && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute inset-0 bg-energy-cyan rounded-lg"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10">{tab}</span>
-            </button>
           ))}
         </motion.div>
       </div>
@@ -254,13 +519,13 @@ function ComparisonTable() {
               <tr>
                 <th className="p-4 text-left text-white font-semibold text-sm bg-deep-space rounded-tl-xl">功能项</th>
                 <th className="p-4 text-center text-white font-semibold text-sm rounded-ttr-xl" style={{ backgroundColor: '#10B981' }}>
-                  入门级<div className="text-xs font-normal opacity-80">¥99</div>
+                  入门<div className="text-xs font-normal opacity-80">免费</div>
                 </th>
                 <th className="p-4 text-center text-white font-semibold text-sm" style={{ backgroundColor: '#F59E0B' }}>
-                  进阶级<div className="text-xs font-normal opacity-80">¥199</div>
+                  进阶<div className="text-xs font-normal opacity-80">¥399/学期</div>
                 </th>
                 <th className="p-4 text-center text-white font-semibold text-sm rounded-tr-xl" style={{ backgroundColor: '#EF4444' }}>
-                  专家级<div className="text-xs font-normal opacity-80">¥299</div>
+                  专家<div className="text-xs font-normal opacity-80">¥1999–¥2999/学期</div>
                 </th>
               </tr>
             </thead>
@@ -319,227 +584,6 @@ function ComparisonTable() {
             </tbody>
           </table>
         </motion.div>
-      </div>
-    </section>
-  );
-}
-
-/* ─── Program Card ─── */
-function ProgramCard({
-  program,
-  index,
-  onEnroll,
-  enrollingId,
-}: {
-  program: Program;
-  index: number;
-  onEnroll: (id: number) => void;
-  enrollingId: number | null;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const isEven = index % 2 === 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 60 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.8, ease: easeOutExpo }}
-      className="glass-card rounded-2xl p-6 sm:p-8 lg:p-12 transition-all duration-400 hover:border-[rgba(0,212,255,0.2)] hover:-translate-y-1"
-    >
-      <div className={`flex flex-col ${isEven ? 'lg:flex-row' : 'lg:flex-row-reverse'} gap-8 lg:gap-12`}>
-        {/* Image */}
-        <motion.div
-          initial={{ opacity: 0, scale: 1.05 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.2, ease: easeOutExpo }}
-          className="lg:w-[40%] flex-shrink-0"
-        >
-          <div className="relative rounded-xl overflow-hidden">
-            <img
-              src={program.image}
-              alt={program.title}
-              className="w-full h-48 sm:h-56 lg:h-64 object-cover rounded-xl"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                const fallback = target.nextElementSibling as HTMLElement;
-                if (fallback) fallback.style.display = 'flex';
-              }}
-            />
-            <div className="hidden w-full h-48 sm:h-56 lg:h-64 rounded-xl items-center justify-center" style={{ backgroundColor: `${program.badgeColor}15` }}>
-              <GraduationCap className="w-16 h-16" style={{ color: program.badgeColor, opacity: 0.5 }} />
-            </div>
-            {program.tag && (
-              <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold text-white" style={{ backgroundColor: program.tagColor }}>
-                {program.tag}
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Content */}
-        <div className="lg:w-[60%] flex flex-col">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold text-white" style={{ backgroundColor: program.badgeColor }}>
-              {program.tier}
-            </span>
-            <div className="flex items-center gap-1 text-text-gray text-xs">
-              <Clock className="w-3.5 h-3.5" />
-              {program.duration}
-            </div>
-          </div>
-
-          <h3 className="font-outfit text-xl sm:text-2xl font-bold text-white mb-2">{program.title}</h3>
-
-          <p className="text-energy-cyan font-jetbrains text-2xl sm:text-3xl font-bold mb-4">
-            {program.price}
-            <span className="text-text-gray text-sm font-normal">/学期</span>
-          </p>
-
-          <p className="text-text-gray text-sm leading-relaxed mb-6">{program.description}</p>
-
-          {/* Features list */}
-          <motion.ul
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="space-y-2.5 mb-6"
-          >
-            {program.features.map((feature) => (
-              <motion.li
-                key={feature}
-                variants={{
-                  hidden: { opacity: 0, x: 20 },
-                  visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: easeOutExpo } },
-                }}
-                className="flex items-start gap-3"
-              >
-                <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: program.badgeColor }} />
-                <span className="text-white/80 text-sm">{feature}</span>
-              </motion.li>
-            ))}
-          </motion.ul>
-
-          {/* Expandable details */}
-          <AnimatePresence>
-            {expanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.4, ease: easeOutExpo }}
-                className="overflow-hidden"
-              >
-                <div className="pt-4 pb-6 border-t border-[rgba(255,255,255,0.08)]">
-                  <h4 className="text-white font-semibold text-sm mb-3">完整服务清单</h4>
-                  <ol className="space-y-2">
-                    {program.features.map((f, i) => (
-                      <li key={i} className="flex items-center gap-2 text-text-gray text-sm">
-                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0" style={{ backgroundColor: program.badgeColor }}>
-                          {i + 1}
-                        </span>
-                        {f}
-                      </li>
-                    ))}
-                  </ol>
-                  <p className="text-text-gray text-sm mt-4 leading-relaxed">
-                    本方案专为{program.tier}学员设计，涵盖从基础能力评估到实战技能训练的全流程服务。选择此方案，你将获得系统化的职业培养体验。
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Buttons */}
-          <div className="flex flex-wrap items-center gap-3 mt-auto pt-4">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[rgba(255,255,255,0.12)] text-white text-sm font-medium hover:bg-white/5 transition-all duration-200"
-            >
-              {expanded ? '收起详情' : '查看详情'}
-              <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.3 }}>
-                <ChevronDown className="w-4 h-4" />
-              </motion.div>
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onEnroll(program.id)}
-              disabled={enrollingId === program.id}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-white text-sm font-medium shadow-glow transition-all duration-200 ${program.ctaColor} disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {enrollingId === program.id ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  报名中...
-                </>
-              ) : (
-                <>
-                  {program.ctaText}
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </motion.button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ─── Programs Detail Section ─── */
-function ProgramsDetailSection({
-  activeTab,
-  programs,
-  onEnroll,
-  enrollingId,
-  loading,
-}: {
-  activeTab: TabFilter;
-  programs: Program[];
-  onEnroll: (id: number) => void;
-  enrollingId: number | null;
-  loading: boolean;
-}) {
-  const filteredPrograms =
-    activeTab === '全部方案' ? programs : programs.filter((p) => p.filterCategory === activeTab);
-
-  return (
-    <section className="py-16 sm:py-24 bg-deep-space">
-      <div className="section-container space-y-12">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="w-10 h-10 text-energy-cyan animate-spin mb-4" />
-            <p className="text-text-gray text-sm">加载培养方案...</p>
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-12"
-            >
-              {filteredPrograms.length === 0 ? (
-                <div className="text-center py-16">
-                  <GraduationCap className="w-12 h-12 text-text-gray mx-auto mb-4 opacity-30" />
-                  <p className="text-text-gray text-sm">暂无该分类的培养方案</p>
-                </div>
-              ) : (
-                filteredPrograms.map((program, index) => (
-                  <ProgramCard key={program.id} program={program} index={index} onEnroll={onEnroll} enrollingId={enrollingId} />
-                ))
-              )}
-            </motion.div>
-          </AnimatePresence>
-        )}
       </div>
     </section>
   );
@@ -714,7 +758,7 @@ function CTASection() {
 
 /* ─── Main Page ─── */
 export default function Programs() {
-  const [activeTab, setActiveTab] = useState<TabFilter>('全部方案');
+  const [activeLevel, setActiveLevel] = useState<PlanLevel>('入门');
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrollingId, setEnrollingId] = useState<number | null>(null);
@@ -766,9 +810,16 @@ export default function Programs() {
 
   return (
     <main className="min-h-[100dvh]">
-      <HeroSection activeTab={activeTab} onTabChange={setActiveTab} />
+      <HeroSection />
       <ComparisonTable />
-      <ProgramsDetailSection activeTab={activeTab} programs={programs} onEnroll={handleEnroll} enrollingId={enrollingId} loading={loading} />
+      <ProgramsDetailSection
+        activeLevel={activeLevel}
+        onLevelChange={setActiveLevel}
+        programs={programs}
+        onEnroll={handleEnroll}
+        enrollingId={enrollingId}
+        loading={loading}
+      />
       <ProcessSection />
       <FAQSection />
       <CTASection />
