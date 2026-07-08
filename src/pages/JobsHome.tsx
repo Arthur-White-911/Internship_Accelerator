@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Briefcase, Building2, TrendingUp, MapPin, Search,
-  ChevronRight, Zap, BarChart3, Clock, ExternalLink,
+  ChevronRight, Zap, BarChart3, Clock, GraduationCap,
   Loader2, RefreshCw, AlertCircle,
 } from 'lucide-react';
 import { jobsApi, type JobsStats } from '../api/jobs';
@@ -112,16 +112,16 @@ export default function JobsHome() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[rgba(0,212,255,0.2)] bg-[rgba(0,212,255,0.06)] text-energy-cyan text-sm font-medium mb-6">
               <Zap className="w-3.5 h-3.5" />
-              苏州招聘信息聚合平台
+              苏州校园招聘聚合平台
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
               发现苏州最新<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-energy-cyan to-crystal-blue">
-                实习 & 招聘机会
+                校园招聘机会
               </span>
             </h1>
             <p className="text-[#94A3B8] text-lg mb-8 max-w-xl mx-auto">
-              每日自动汇聚智联招聘、BOSS直聘等平台的苏州招聘信息，多维筛选，精准匹配
+              每日自动汇聚苏州地区最新校招信息，聚焦实习岗与应届岗，专为在校生与应届毕业生打造
             </p>
           </motion.div>
 
@@ -230,7 +230,7 @@ export default function JobsHome() {
                 transition={{ delay: 0.2 }}
               >
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-lg font-semibold text-white">热门分类</h2>
+                  <h2 className="text-lg font-semibold text-white">校招热门分类</h2>
                   <button
                     onClick={() => navigate('/jobs/list')}
                     className="flex items-center gap-1 text-sm text-energy-cyan hover:opacity-80 transition-opacity"
@@ -378,19 +378,19 @@ export default function JobsHome() {
               className="flex flex-col sm:flex-row gap-4 justify-center pt-4"
             >
               <button
-                onClick={() => navigate('/jobs/list')}
+                onClick={() => navigate('/jobs/list?job_type=实习岗')}
                 className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-energy-cyan to-crystal-blue hover:opacity-90 transition-opacity"
               >
                 <Briefcase className="w-5 h-5" />
-                浏览全部岗位
+                实习岗位
                 <ChevronRight className="w-4 h-4" />
               </button>
               <button
-                onClick={() => navigate('/jobs/list?job_type=实习')}
+                onClick={() => navigate('/jobs/list?job_type=应届岗')}
                 className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-[#CBD5E1] border border-[rgba(255,255,255,0.12)] hover:border-energy-cyan hover:text-white transition-all"
               >
-                <ExternalLink className="w-5 h-5" />
-                只看实习岗位
+                <GraduationCap className="w-5 h-5" />
+                应届岗位
               </button>
             </motion.div>
           </>

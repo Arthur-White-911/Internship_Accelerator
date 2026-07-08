@@ -408,9 +408,9 @@ export default function JobsList() {
                 </div>
               </div>
 
-              {/* 职位类型 */}
+              {/* 校招类型 */}
               <div>
-                <div className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2.5">职位类型</div>
+                <div className="text-xs font-medium text-[#64748B] uppercase tracking-wider mb-2.5">校招类型</div>
                 <div className="flex flex-wrap gap-2">
                   {filters.job_types.map(t => (
                     <button

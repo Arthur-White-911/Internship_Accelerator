@@ -48,11 +48,28 @@ function normalizeDistrict(raw) {
   return '其他';
 }
 
+// 校招岗位类型标准化：将各种实习相关表述映射为“实习岗”，应届相关表述映射为“应届岗”
+function normalizeCampusType(jobType) {
+  if (!jobType) return null;
+  const t = jobType.trim();
+  if (['实习', '实习岗', '实习生', '实习岗位'].includes(t)) return '实习岗';
+  if (['应届', '应届岗', '应届生', '应届岗位', '校招'].includes(t)) return '应届岗';
+  return null; // 返回 null 表示不是校招岗位（社招）
+}
+
 // 构建 NeDB 查询条件
 function buildQuery(params) {
   const query = {};
   const { district, category, education, experience, salary_min, salary_max,
           job_type, source_platform, date, keyword } = params;
+
+  // 默认只返回校招岗位（实习岗 + 应届岗）
+  if (job_type && ['实习岗', '应届岗'].includes(job_type)) {
+    query.campus_type = job_type;
+  } else {
+    // 未指定类型时，默认只显示校招岗位
+    query.campus_type = { $in: ['实习岗', '应届岗'] };
+  }
 
   if (district) {
     const districts = Array.isArray(district) ? district : [district];
@@ -69,7 +86,6 @@ function buildQuery(params) {
   if (experience && experience !== '不限') {
     query.experience = experience;
   }
-  if (job_type) query.job_type = job_type;
   if (source_platform) query.source_platform = source_platform;
 
   // 薪资区间
@@ -112,6 +128,9 @@ router.post('/batch', async (req, res) => {
         // 标准化地区
         const district = normalizeDistrict(job.district);
 
+        // 标准化校招类型
+        const campus_type = normalizeCampusType(job.job_type || job.campus_type || '');
+
         const doc = {
           title: (job.title || '').trim(),
           company: (job.company || '').trim(),
@@ -123,7 +142,8 @@ router.post('/batch', async (req, res) => {
           experience: job.experience || '不限',
           education: job.education || '不限',
           category: job.category || '其他',
-          job_type: job.job_type || '全职',
+          job_type: job.job_type || '实习',
+          campus_type: campus_type || '实习岗', // 默认归类为实习岗
           publish_date: job.publish_date || today,
           source_url: job.source_url || '',
           source_platform: job.source_platform || '未知',
@@ -174,7 +194,8 @@ router.post('/batch', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const allJobs = await db.jobs.findAsync({});
+    // 只统计校招岗位
+    const allJobs = await db.jobs.findAsync({ campus_type: { $in: ['实习岗', '应届岗'] } });
 
     const todayJobs = allJobs.filter(j => j.publish_date === today);
     const totalJobs = allJobs.length;
@@ -265,7 +286,8 @@ router.get('/stats', async (req, res) => {
 // ─── GET /api/jobs/filters ─── 获取筛选选项（动态）────────────────────────
 router.get('/filters', async (req, res) => {
   try {
-    const allJobs = await db.jobs.findAsync({});
+    // 只从校招岗位中提取分类和来源平台
+    const allJobs = await db.jobs.findAsync({ campus_type: { $in: ['实习岗', '应届岗'] } });
     const categories = [...new Set(allJobs.map(j => j.category).filter(Boolean))].sort();
     const platforms = [...new Set(allJobs.map(j => j.source_platform).filter(Boolean))].sort();
 
@@ -276,7 +298,7 @@ router.get('/filters', async (req, res) => {
         categories,
         educations: ['不限','大专','本科','硕士','博士'],
         experiences: ['不限','应届','1年以内','1-3年','3-5年','5-10年','10年以上'],
-        job_types: ['全职','兼职','实习'],
+        job_types: ['实习岗', '应届岗'],
         source_platforms: platforms,
         sort_options: [
           { value: 'date_desc', label: '最新发布' },
